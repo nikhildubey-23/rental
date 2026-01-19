@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+
+{% block page_title %}Owner Dashboard{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group" role="group">
+    <a href="{{ url_for('create_notification') }}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> New Notification
+    </a>
+    <a href="{{ url_for('payment_reports') }}" class="btn btn-success">
+        <i class="fas fa-download"></i> Export Reports
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Statistics Overview -->
+<div class="row mb-4 fade-in">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stats-card">
+            <div class="stats-icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stats-number">{{ total_tenants or 0 }}</div>
+            <div class="stats-label">Total Tenants</div>
+            <div class="mt-2">
+                <small class="opacity-75">
+                    <i class="fas fa-arrow-up"></i> 12% from last month
+                </small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stats-card success">
+            <div class="stats-icon">
+                <i class="fas fa-dollar-sign"></i>
+            </div>
+            <div class="stats-number">${{ "%.0f"|format(total_payments or 0) }}</div>
+            <div class="stats-label">Total Revenue</div>
+            <div class="mt-2">
+                <small class="opacity-75">
+                    <i class="fas fa-arrow-up"></i> 8% from last month
+                </small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stats-card warning">
+            <div class="stats-icon">
+                <i class="fas fa-tools"></i>
+            </div>
+            <div class="stats-number">{{ pending_requests or 0 }}</div>
+            <div class="stats-label">Pending Requests</div>
+            <div class="mt-2">
+                <small class="opacity-75">
+                    <i class="fas fa-clock"></i> 2 avg. response time
+                </small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stats-card info">
+            <div class="stats-icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="stats-number">{{ "%.0f"|format((total_payments / total_tenants) if total_tenants and total_tenants > 0 else 0) }}</div>
+            <div class="stats-label">Avg. Revenue/Tenant</div>
+            <div class="mt-2">
+                <small class="opacity-75">
+                    <i class="fas fa-arrow-up"></i> 5% increase
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Recent Payments Table -->
+    <div class="col-lg-8 mb-4">
+        <div class="card fade-in">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-credit-card text-primary me-2"></i>
+                    Recent Payments
+                </h5>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary active">All</button>
+                    <button class="btn btn-outline-primary">Completed</button>
+                    <button class="btn btn-outline-primary">Pending</button>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if recent_payments %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Tenant</th>
+                                <th>Amount</th>
+                                <th>Period</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in recent_payments %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="user-avatar me-2" style="width: 32px; height: 32px; font-size: 0.75rem;">
+                                            {{ payment.tenant.username[0].upper() if payment.tenant and payment.tenant.username else '?' }}
+                                        </div>
+                                        <div>
+                                            <div class="fw-semibold">{{ payment.tenant.username if payment.tenant else 'Unknown' }}</div>
+                                            <small class="text-muted">Apt {{ payment.tenant.apartment_number if payment.tenant and payment.tenant.apartment_number else 'N/A' }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="fw-semibold">${{ "%.2f"|format(payment.amount) if payment.amount else '0.00' }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark">{{ payment.month or 'N/A' }} {{ payment.year or 'N/A' }}</span>
+                                </td>
+                                <td>{{ payment.payment_date.strftime('%b %d, %Y') if payment.payment_date else 'N/A' }}</td>
+                                <td>
+                                    {% if payment.status == 'completed' %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check-circle me-1"></i>Completed
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning">
+                                            <i class="fas fa-clock me-1"></i>{{ payment.status.title() if payment.status else 'Unknown' }}
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary" title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn btn-outline-success" title="Download Receipt">
+                                            <i class="fas fa-download"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <div class="mb-3">
+                        <i class="fas fa-invoice fs-1 text-muted"></i>
+                    </div>
+                    <h6 class="text-muted">No recent payments</h6>
+                    <p class="text-muted small">Payment history will appear here once tenants start making payments.</p>
+                    <a href="{{ url_for('payment_reports') }}" class="btn btn-primary mt-2">
+                        <i class="fas fa-chart-line me-2"></i>View Payment Reports
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <!-- Quick Actions -->
+        <div class="card mb-4 fade-in">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt text-warning me-2"></i>
+                    Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('create_notification') }}" class="btn btn-primary">
+                        <i class="fas fa-bell me-2"></i>Send Notification
+                    </a>
+                    <a href="{{ url_for('payment_reports') }}" class="btn btn-success">
+                        <i class="fas fa-file-excel me-2"></i>View Reports
+                    </a>
+                    <a href="{{ url_for('maintenance_requests') }}" class="btn btn-warning">
+                        <i class="fas fa-tools me-2"></i>Maintenance 
+                        {% if pending_requests and pending_requests > 0 %}
+                            <span class="badge bg-danger ms-1">{{ pending_requests }}</span>
+                        {% endif %}
+                    </a>
+                    <a href="{{ url_for('upload_document') }}" class="btn btn-info">
+                        <i class="fas fa-upload me-2"></i>Upload Document
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- System Status -->
+        <div class="card mb-4 fade-in">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-server text-info me-2"></i>
+                    System Status
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="fw-semibold">Database</span>
+                    <span class="badge bg-success">Connected</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="fw-semibold">File Upload</span>
+                    <span class="badge bg-success">Active</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="fw-semibold">Email Service</span>
+                    <span class="badge bg-warning">Not Configured</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="fw-semibold">Last Backup</span>
+                    <span class="badge bg-secondary">Manual</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Activity -->
+        <div class="card fade-in">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-history text-secondary me-2"></i>
+                    Recent Activity
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    <div class="timeline-item mb-3">
+                        <div class="d-flex">
+                            <div class="timeline-icon bg-success me-3">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-semibold">Payment Received</div>
+                                <small class="text-muted">John Doe - $1,200</small>
+                                <div class="small text-muted">2 hours ago</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="timeline-item mb-3">
+                        <div class="d-flex">
+                            <div class="timeline-icon bg-warning me-3">
+                                <i class="fas fa-tools"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-semibold">Maintenance Request</div>
+                                <small class="text-muted">Apt 201 - Plumbing Issue</small>
+                                <div class="small text-muted">5 hours ago</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="d-flex">
+                            <div class="timeline-icon bg-info me-3">
+                                <i class="fas fa-user-plus"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-semibold">New Tenant Registered</div>
+                                <small class="text-muted">Jane Smith - Apt 305</small>
+                                <div class="small text-muted">1 day ago</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+}
+</style>
+{% endblock %}

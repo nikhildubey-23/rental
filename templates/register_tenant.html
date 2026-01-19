@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block title %}Register Business - RentalHub{% endblock %}
+
+{% block page_title %}Business Registration{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-lg">
+                <div class="card-header bg-gradient text-white">
+                    <div class="text-center">
+                        <i class="fas fa-building fa-3x mb-3"></i>
+                        <h3 class="mb-0">Business Registration</h3>
+                        <p class="mb-0 opacity-75">Start managing your rental properties with our SaaS platform</p>
+                    </div>
+                </div>
+                
+                <div class="card-body p-4">
+                    {% if form %}
+                    <form method="POST" class="needs-validation" novalidate>
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                {{ form.business_name.label(class="form-label fw-semibold") }}
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-building"></i>
+                                    </span>
+                                    {{ form.business_name(class="form-control", placeholder="Enter your business name") }}
+                                </div>
+                                {% if form.business_name.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.business_name.errors %}
+                                            <i class="fas fa-exclamation-circle me-1"></i>{{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-12 mb-3">
+                                {{ form.contact_email.label(class="form-label fw-semibold") }}
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-envelope"></i>
+                                    </span>
+                                    {{ form.contact_email(class="form-control", placeholder="business@company.com") }}
+                                </div>
+                                {% if form.contact_email.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.contact_email.errors %}
+                                            <i class="fas fa-exclamation-circle me-1"></i>{{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-12 mb-3">
+                                {{ form.contact_phone.label(class="form-label fw-semibold") }}
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-phone"></i>
+                                    </span>
+                                    {{ form.contact_phone(class="form-control", placeholder="+1 (555) 123-4567") }}
+                                </div>
+                                {% if form.contact_phone.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.contact_phone.errors %}
+                                            <i class="fas fa-exclamation-circle me-1"></i>{{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-12 mb-3">
+                                {{ form.business_address.label(class="form-label fw-semibold") }}
+                                {{ form.business_address(class="form-control", rows="3", placeholder="123 Main St, City, State 12345") }}
+                                {% if form.business_address.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.business_address.errors %}
+                                            <i class="fas fa-exclamation-circle me-1"></i>{{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-12 mb-4">
+                                {{ form.subscription_plan.label(class="form-label fw-semibold") }}
+                                <div class="card mb-2">
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-4 text-center">
+                                                <div class="plan-card">
+                                                    <h6>Basic</h6>
+                                                    <div class="plan-price">$29<span>/month</span></div>
+                                                    <ul class="plan-features">
+                                                        <li>✓ Up to 10 units</li>
+                                                        <li>✓ Basic support</li>
+                                                        <li>✓ Core features</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4 text-center">
+                                                <div class="plan-card recommended">
+                                                    <span class="badge bg-success">RECOMMENDED</span>
+                                                    <h6>Pro</h6>
+                                                    <div class="plan-price">$79<span>/month</span></div>
+                                                    <ul class="plan-features">
+                                                        <li>✓ Up to 50 units</li>
+                                                        <li>✓ Priority support</li>
+                                                        <li>✓ Advanced features</li>
+                                                        <li>✓ Analytics</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4 text-center">
+                                                <div class="plan-card">
+                                                    <h6>Enterprise</h6>
+                                                    <div class="plan-price">$199<span>/month</span></div>
+                                                    <ul class="plan-features">
+                                                        <li>✓ Unlimited units</li>
+                                                        <li>✓ 24/7 support</li>
+                                                        <li>✓ Custom features</li>
+                                                        <li>✓ API access</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {{ form.subscription_plan(class="form-select", onchange="updatePlanSelection()") }}
+                                {% if form.subscription_plan.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.subscription_plan.errors %}
+                                            <i class="fas fa-exclamation-circle me-1"></i>{{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-primary btn-lg">
+                                        <i class="fas fa-rocket me-2"></i>Start Free Trial
+                                    </button>
+                                    <a href="{{ url_for('login') }}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-arrow-left me-2"></i>Back to Login
+                                    </a>
+                                </div>
+                            </div>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updatePlanSelection() {
+    const select = document.querySelector('select[name="subscription_plan"]');
+    const basicCard = document.querySelectorAll('.plan-card')[0];
+    const proCard = document.querySelectorAll('.plan-card')[1];
+    const enterpriseCard = document.querySelectorAll('.plan-card')[2];
+    
+    // Remove active class from all cards
+    [basicCard, proCard, enterpriseCard].forEach(card => {
+        card.classList.remove('border-primary', 'shadow-lg');
+    });
+    
+    // Add active class to selected plan
+    if (select.value === 'basic') {
+        basicCard.classList.add('border-primary', 'shadow-lg');
+    } else if (select.value === 'pro') {
+        proCard.classList.add('border-primary', 'shadow-lg');
+    } else if (select.value === 'enterprise') {
+        enterpriseCard.classList.add('border-primary', 'shadow-lg');
+    }
+}
+</script>
+
+<style>
+.plan-card {
+    border: 2px solid #e2e8f0;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.plan-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
+}
+
+.plan-card h6 {
+    color: #495057;
+    margin-bottom: 1rem;
+}
+
+.plan-price {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #007bff;
+    margin-bottom: 1rem;
+}
+
+.plan-features {
+    list-style: none;
+    padding: 0;
+}
+
+.plan-features li {
+    padding: 0.25rem 0;
+    margin-bottom: 0.25rem;
+    font-size: 0.875rem;
+}
+
+.recommended {
+    position: relative;
+}
+
+.badge {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    font-size: 0.625rem;
+}
+</style>
+{% endblock %}

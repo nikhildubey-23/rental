@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block page_title %}Documents{% endblock %}
+
+{% block page_actions %}
+{% if current_user.role == 'owner' %}
+<a href="{{ url_for('upload_document') }}" class="btn btn-primary">
+    <i class="fas fa-upload"></i> Upload Document
+</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-file-alt"></i> 
+                    {% if current_user.role == 'owner' %}All Documents{% else %}Available Documents{% endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if documents %}
+                <div class="row">
+                    {% for document in documents %}
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="me-3">
+                                        {% if document.file_type.startswith('image/') %}
+                                        <i class="fas fa-image fs-1 text-primary"></i>
+                                        {% elif document.file_type.startswith('application/pdf') %}
+                                        <i class="fas fa-file-pdf fs-1 text-danger"></i>
+                                        {% elif document.file_type.startswith('application/vnd.ms-excel') or document.file_type.startswith('application/vnd.openxmlformats-officedocument.spreadsheetml') %}
+                                        <i class="fas fa-file-excel fs-1 text-success"></i>
+                                        {% elif document.file_type.startswith('application/vnd.ms-word') or document.file_type.startswith('application/vnd.openxmlformats-officedocument.wordprocessingml') %}
+                                        <i class="fas fa-file-word fs-1 text-info"></i>
+                                        {% else %}
+                                        <i class="fas fa-file fs-1 text-secondary"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="card-title mb-1">{{ document.title }}</h6>
+                                        <small class="text-muted">{{ document.filename }}</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar"></i> {{ document.uploaded_at.strftime('%b %d, %Y') }}
+                                    </small>
+                                </div>
+                                
+                                {% if document.target_role %}
+                                <div class="mb-2">
+                                    <span class="badge bg-info">
+                                        {% if document.target_role == 'all' %}Everyone{% else %}{{ document.target_role.title() }}s{% endif %}
+                                    </span>
+                                </div>
+                                {% endif %}
+                                
+                                <div class="d-grid gap-2">
+                                    <a href="{{ url_for('download_document', document_id=document.id) }}" class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-download"></i> Download
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-file-alt fs-1 text-muted"></i>
+                    <h5 class="text-muted mt-3">No documents found</h5>
+                    <p class="text-muted">
+                        {% if current_user.role == 'owner' %}
+                        Upload your first document to share with tenants or keep for your records.
+                        {% else %}
+                        No documents have been shared with you yet.
+                        {% endif %}
+                    </p>
+                    {% if current_user.role == 'owner' %}
+                    <a href="{{ url_for('upload_document') }}" class="btn btn-primary mt-2">
+                        <i class="fas fa-upload"></i> Upload First Document
+                    </a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Document Statistics (for owner) -->
+{% if current_user.role == 'owner' %}
+<div class="row mt-4">
+    <div class="col-md-3 mb-3">
+        <div class="stats-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stats-number">{{ documents | length }}</div>
+                    <div class="small">Total Documents</div>
+                </div>
+                <div class="fs-1 opacity-50">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="stats-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stats-number">{{ documents | selectattr('target_role', 'eq', 'tenant') | list | length }}</div>
+                    <div class="small">Tenant Documents</div>
+                </div>
+                <div class="fs-1 opacity-50">
+                    <i class="fas fa-users"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="stats-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stats-number">{{ documents | selectattr('target_role', 'eq', None) | list | length + documents | selectattr('target_role', 'eq', 'all') | list | length }}</div>
+                    <div class="small">Public Documents</div>
+                </div>
+                <div class="fs-1 opacity-50">
+                    <i class="fas fa-globe"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="stats-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stats-number">{{ documents | selectattr('file_type', 'contains', 'pdf') | list | length }}</div>
+                    <div class="small">PDF Files</div>
+                </div>
+                <div class="fs-1 opacity-50">
+                    <i class="fas fa-file-pdf"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

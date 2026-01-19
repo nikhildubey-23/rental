@@ -1,0 +1,285 @@
+{% extends "base.html" %}
+
+{% block title %}Register - RentalHub{% endblock %}
+
+{% block content %}
+<div class="auth-card fade-in" style="max-width: 600px;">
+    <div class="auth-header">
+        <div class="auth-logo">
+            <i class="fas fa-user-plus"></i>
+        </div>
+        <h2 class="auth-title">Create Account</h2>
+        <p class="auth-subtitle">Join RentalHub as a tenant</p>
+    </div>
+    
+    <div class="auth-body">
+        {% if form %}
+        <form method="POST">
+            {{ form.hidden_tag() }}
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    {{ form.username.label(class="form-label") }}
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-user"></i>
+                        </span>
+                        {{ form.username(class="form-control", placeholder="Choose username") }}
+                    </div>
+                    {% if form.username.errors %}
+                        <div class="text-danger small mt-1">
+                            {% for error in form.username.errors %}
+                                <i class="fas fa-exclamation-circle me-1"></i>{{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    {{ form.email.label(class="form-label") }}
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-envelope"></i>
+                        </span>
+                        {{ form.email(class="form-control", placeholder="your@email.com") }}
+                    </div>
+                    {% if form.email.errors %}
+                        <div class="text-danger small mt-1">
+                            {% for error in form.email.errors %}
+                                <i class="fas fa-exclamation-circle me-1"></i>{{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    {{ form.apartment_number.label(class="form-label") }}
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-door-open"></i>
+                        </span>
+                        {{ form.apartment_number(class="form-control", placeholder="e.g., A101") }}
+                    </div>
+                    {% if form.apartment_number.errors %}
+                        <div class="text-danger small mt-1">
+                            {% for error in form.apartment_number.errors %}
+                                <i class="fas fa-exclamation-circle me-1"></i>{{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    {{ form.phone.label(class="form-label") }}
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-phone"></i>
+                        </span>
+                        {{ form.phone(class="form-control", placeholder="+1234567890") }}
+                    </div>
+                    {% if form.phone.errors %}
+                        <div class="text-danger small mt-1">
+                            {% for error in form.phone.errors %}
+                                <i class="fas fa-exclamation-circle me-1"></i>{{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    {{ form.password.label(class="form-label") }}
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-lock"></i>
+                        </span>
+                        {{ form.password(class="form-control", placeholder="Create password") }}
+                        <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    {% if form.password.errors %}
+                        <div class="text-danger small mt-1">
+                            {% for error in form.password.errors %}
+                                <i class="fas fa-exclamation-circle me-1"></i>{{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    <div class="form-text">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Minimum 6 characters
+                    </div>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    {{ form.confirm_password.label(class="form-label") }}
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-lock"></i>
+                        </span>
+                        {{ form.confirm_password(class="form-control", placeholder="Confirm password") }}
+                        <button class="btn btn-outline-secondary" type="button" id="toggleConfirmPassword">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    {% if form.confirm_password.errors %}
+                        <div class="text-danger small mt-1">
+                            {% for error in form.confirm_password.errors %}
+                                <i class="fas fa-exclamation-circle me-1"></i>{{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="d-grid mb-4">
+                {{ form.submit(class="btn btn-primary btn-lg") }}
+            </div>
+        </form>
+        {% endif %}
+        
+        <div class="text-center">
+            <p class="mb-0">Already have an account? 
+                <a href="{{ url_for('login') }}" class="text-primary text-decoration-none fw-semibold">
+                    Sign in here
+                </a>
+            </p>
+        </div>
+        
+        <div class="mt-4">
+            <div class="alert alert-info">
+                <h6 class="alert-heading">
+                    <i class="fas fa-shield-alt me-2"></i>
+                    Your Information is Secure
+                </h6>
+                <p class="mb-2 small">
+                    We take data protection seriously. Your personal information is encrypted and never shared with third parties.
+                </p>
+                <hr>
+                <p class="mb-0 small">
+                    <i class="fas fa-check-circle text-success me-2"></i>
+                    SSL Encrypted Connection
+                    <i class="fas fa-check-circle text-success ms-3 me-2"></i>
+                    GDPR Compliant
+                    <i class="fas fa-check-circle text-success ms-3 me-2"></i>
+                    Secure Data Storage
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Toggle password visibility
+    document.getElementById('togglePassword')?.addEventListener('click', function() {
+        const passwordInput = document.getElementById('password');
+        const icon = this.querySelector('i');
+        
+        if (passwordInput && passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else if (passwordInput) {
+            passwordInput.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    });
+    
+    document.getElementById('toggleConfirmPassword')?.addEventListener('click', function() {
+        const passwordInput = document.getElementById('confirm_password');
+        const icon = this.querySelector('i');
+        
+        if (passwordInput && passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else if (passwordInput) {
+            passwordInput.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    });
+    
+    // Password strength indicator
+    document.getElementById('password')?.addEventListener('input', function() {
+        const password = this.value;
+        const strength = checkPasswordStrength(password);
+        updatePasswordStrength(strength);
+    });
+    
+    function checkPasswordStrength(password) {
+        let strength = 0;
+        
+        if (password.length >= 6) strength++;
+        if (password.match(/[a-z]+/)) strength++;
+        if (password.match(/[A-Z]+/)) strength++;
+        if (password.match(/[0-9]+/)) strength++;
+        if (password.match(/[$@#&!]+/)) strength++;
+        
+        return strength;
+    }
+    
+    function updatePasswordStrength(strength) {
+        let strengthBar = document.getElementById('passwordStrength');
+        let strengthText = document.getElementById('passwordStrengthText');
+        
+        if (!strengthBar || !strengthText) {
+            strengthBar = createPasswordStrengthBar();
+            strengthText = createPasswordStrengthText();
+        }
+        
+        const strengthLevels = [
+            { width: '20%', color: 'danger', text: 'Very Weak' },
+            { width: '40%', color: 'warning', text: 'Weak' },
+            { width: '60%', color: 'info', text: 'Fair' },
+            { width: '80%', color: 'primary', text: 'Good' },
+            { width: '100%', color: 'success', text: 'Strong' }
+        ];
+        
+        const level = strengthLevels[Math.min(strength, 4)] || strengthLevels[0];
+        
+        strengthBar.style.width = level.width;
+        strengthBar.className = `progress-bar bg-${level.color}`;
+        strengthText.textContent = level.text;
+        strengthText.className = `text-${level.color} small mt-1`;
+    }
+    
+    function createPasswordStrengthBar() {
+        const container = document.createElement('div');
+        container.className = 'progress mt-2';
+        container.style.height = '4px';
+        container.id = 'passwordStrengthContainer';
+        
+        const bar = document.createElement('div');
+        bar.id = 'passwordStrength';
+        bar.className = 'progress-bar';
+        bar.style.width = '0%';
+        
+        container.appendChild(bar);
+        
+        const passwordGroup = document.getElementById('password')?.closest('.mb-3');
+        if (passwordGroup && !document.getElementById('passwordStrengthContainer')) {
+            passwordGroup.appendChild(container);
+        }
+        
+        return bar;
+    }
+    
+    function createPasswordStrengthText() {
+        const text = document.createElement('div');
+        text.id = 'passwordStrengthText';
+        text.className = 'small mt-1';
+        
+        const passwordGroup = document.getElementById('password')?.closest('.mb-3');
+        if (passwordGroup && !document.getElementById('passwordStrengthText')) {
+            passwordGroup.appendChild(text);
+        }
+        
+        return text;
+    }
+</script>
+{% endblock %}

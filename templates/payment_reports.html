@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+
+{% block page_title %}Payment Reports{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group" role="group">
+    <button class="btn btn-outline-success" onclick="exportToExcel()">
+        <i class="fas fa-file-excel"></i> Export Excel
+    </button>
+    <button class="btn btn-outline-danger" onclick="exportToPDF()">
+        <i class="fas fa-file-pdf"></i> Export PDF
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Summary Statistics -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="stats-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stats-number">${{ "%.0f"|format(payments | selectattr('status', 'eq', 'completed') | map(attribute='amount') | list | sum or 0) }}</div>
+                    <div class="small">Total Revenue</div>
+                </div>
+                <div class="fs-1 opacity-50">
+                    <i class="fas fa-dollar-sign"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="stats-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stats-number">{{ payments | selectattr('status', 'eq', 'completed') | list | length }}</div>
+                    <div class="small">Completed Payments</div>
+                </div>
+                <div class="fs-1 opacity-50">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="stats-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stats-number">{{ payments | selectattr('status', 'eq', 'pending') | list | length }}</div>
+                    <div class="small">Pending Payments</div>
+                </div>
+                <div class="fs-1 opacity-50">
+                    <i class="fas fa-clock"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="stats-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stats-number">${{ "%.0f"|format((payments | selectattr('status', 'eq', 'completed') | map(attribute='amount') | list | sum or 0) / (payments | selectattr('status', 'eq', 'completed') | list | length) if (payments | selectattr('status', 'eq', 'completed') | list | length) > 0 else 0) }}</div>
+                    <div class="small">Average Payment</div>
+                </div>
+                <div class="fs-1 opacity-50">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Options -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h6 class="mb-0"><i class="fas fa-filter"></i> Filter Reports</h6>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <label class="form-label">Status</label>
+                <select class="form-select" id="statusFilter" onchange="filterTable()">
+                    <option value="">All Status</option>
+                    <option value="completed">Completed</option>
+                    <option value="pending">Pending</option>
+                    <option value="failed">Failed</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Month</label>
+                <select class="form-select" id="monthFilter" onchange="filterTable()">
+                    <option value="">All Months</option>
+                    <option value="January">January</option>
+                    <option value="February">February</option>
+                    <option value="March">March</option>
+                    <option value="April">April</option>
+                    <option value="May">May</option>
+                    <option value="June">June</option>
+                    <option value="July">July</option>
+                    <option value="August">August</option>
+                    <option value="September">September</option>
+                    <option value="October">October</option>
+                    <option value="November">November</option>
+                    <option value="December">December</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Year</label>
+                <select class="form-select" id="yearFilter" onchange="filterTable()">
+                    <option value="">All Years</option>
+                    {% set years = payments | map(attribute='year') | unique | sort | list %}
+                    {% for year in years %}
+                    <option value="{{ year }}">{{ year }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <button class="btn btn-outline-secondary d-block" onclick="clearFilters()">
+                    <i class="fas fa-times"></i> Clear Filters
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Reports Table -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-table"></i> Payment Reports</h5>
+    </div>
+    <div class="card-body">
+        {% if payments %}
+        <div class="table-responsive">
+            <table class="table table-hover" id="paymentTable">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID</th>
+                        <th>Tenant</th>
+                        <th>Apartment</th>
+                        <th>Amount</th>
+                        <th>Month</th>
+                        <th>Year</th>
+                        <th>Payment Date</th>
+                        <th>Method</th>
+                        <th>Status</th>
+                        <th>Transaction ID</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payment in payments %}
+                    <tr data-status="{{ payment.status }}" data-month="{{ payment.month }}" data-year="{{ payment.year }}">
+                        <td>{{ payment.id }}</td>
+                        <td>{{ payment.tenant.username }}</td>
+                        <td>{{ payment.tenant.apartment_number }}</td>
+                        <td>${{ "%.2f"|format(payment.amount) }}</td>
+                        <td>{{ payment.month }}</td>
+                        <td>{{ payment.year }}</td>
+                        <td>{{ payment.payment_date.strftime('%b %d, %Y') }}</td>
+                        <td>{{ payment.payment_method or 'N/A' }}</td>
+                        <td>
+                            <span class="badge bg-{{ 'success' if payment.status == 'completed' else 'warning' if payment.status == 'pending' else 'danger' }}">
+                                {{ payment.status.title() }}
+                            </span>
+                        </td>
+                        <td>{{ payment.transaction_id or 'N/A' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-inbox fs-1 text-muted"></i>
+            <h5 class="text-muted mt-3">No payment data found</h5>
+            <p class="text-muted">Payments will appear here once tenants start making rent payments.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function filterTable() {
+    const statusFilter = document.getElementById('statusFilter').value;
+    const monthFilter = document.getElementById('monthFilter').value;
+    const yearFilter = document.getElementById('yearFilter').value;
+    const rows = document.querySelectorAll('#paymentTable tbody tr');
+    
+    rows.forEach(row => {
+        const status = row.dataset.status;
+        const month = row.dataset.month;
+        const year = row.dataset.year;
+        
+        const statusMatch = !statusFilter || status === statusFilter;
+        const monthMatch = !monthFilter || month === monthFilter;
+        const yearMatch = !yearFilter || year === yearFilter;
+        
+        if (statusMatch && monthMatch && yearMatch) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+function clearFilters() {
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('monthFilter').value = '';
+    document.getElementById('yearFilter').value = '';
+    filterTable();
+}
+
+function exportToExcel() {
+    alert('Excel export functionality would be implemented here using a library like openpyxl or pandas');
+}
+
+function exportToPDF() {
+    alert('PDF export functionality would be implemented here using a library like reportlab');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,382 @@
+{% extends "base.html" %}
+
+{% block page_title %}Maintenance Requests{% endblock %}
+
+{% block page_actions %}
+{% if current_user and current_user.role == 'tenant' %}
+<a href="{{ url_for('create_maintenance_request') }}" class="btn btn-warning">
+    <i class="fas fa-plus"></i> New Request
+</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<!-- Statistics Overview (for owner) -->
+{% if current_user and current_user.role == 'owner' %}
+<div class="row mb-4 fade-in">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stats-card danger">
+            <div class="stats-icon">
+                <i class="fas fa-exclamation-circle"></i>
+            </div>
+            <div class="stats-number">{{ requests | selectattr('status', 'eq', 'open') | list | length if requests else 0 }}</div>
+            <div class="stats-label">Open Requests</div>
+            <div class="mt-2">
+                <small class="opacity-75">Need attention</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stats-card warning">
+            <div class="stats-icon">
+                <i class="fas fa-spinner"></i>
+            </div>
+            <div class="stats-number">{{ requests | selectattr('status', 'eq', 'in_progress') | list | length if requests else 0 }}</div>
+            <div class="stats-label">In Progress</div>
+            <div class="mt-2">
+                <small class="opacity-75">Being worked on</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stats-card success">
+            <div class="stats-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stats-number">{{ requests | selectattr('status', 'eq', 'completed') | list | length if requests else 0 }}</div>
+            <div class="stats-label">Completed</div>
+            <div class="mt-2">
+                <small class="opacity-75">Resolved</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stats-card info">
+            <div class="stats-icon">
+                <i class="fas fa-fire"></i>
+            </div>
+            <div class="stats-number">{{ requests | selectattr('priority', 'eq', 'high') | list | length if requests else 0 }}</div>
+            <div class="stats-label">High Priority</div>
+            <div class="mt-2">
+                <small class="opacity-75">Urgent matters</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Main Content -->
+<div class="row fade-in">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-tools text-primary me-2"></i>
+                    {% if current_user and current_user.role == 'owner' %}All Maintenance Requests{% else %}Your Maintenance Requests{% endif %}
+                </h5>
+                <div class="d-flex gap-2">
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-primary active" data-filter="all">All</button>
+                        <button class="btn btn-outline-primary" data-filter="open">Open</button>
+                        <button class="btn btn-outline-primary" data-filter="in_progress">In Progress</button>
+                        <button class="btn btn-outline-primary" data-filter="completed">Completed</button>
+                    </div>
+                    {% if current_user and current_user.role == 'tenant' %}
+                    <a href="{{ url_for('create_maintenance_request') }}" class="btn btn-warning btn-sm">
+                        <i class="fas fa-plus me-1"></i>New Request
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body">
+                {% if requests %}
+                <div class="table-responsive">
+                    <table class="table table-hover" id="maintenanceTable">
+                        <thead>
+                            <tr>
+                                {% if current_user and current_user.role == 'owner' %}
+                                <th>Tenant</th>
+                                <th>Apartment</th>
+                                {% endif %}
+                                <th>Title</th>
+                                <th>Category</th>
+                                <th>Priority</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                {% if current_user and current_user.role == 'owner' %}
+                                <th>Actions</th>
+                                {% endif %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for request in requests %}
+                            <tr data-status="{{ request.status if request.status else 'unknown' }}">
+                                {% if current_user and current_user.role == 'owner' %}
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="user-avatar me-2" style="width: 32px; height: 32px; font-size: 0.75rem;">
+                                            {{ request.tenant.username[0].upper() if request.tenant and request.tenant.username else '?' }}
+                                        </div>
+                                        <span class="fw-semibold">{{ request.tenant.username if request.tenant and request.tenant.username else 'Unknown' }}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark">{{ request.tenant.apartment_number if request.tenant and request.tenant.apartment_number else 'N/A' }}</span>
+                                </td>
+                                {% endif %}
+                                <td>
+                                    <a href="#" class="text-decoration-none fw-semibold" data-bs-toggle="modal" data-bs-target="#detailModal{{ request.id if request.id else 'unknown' }}">
+                                        {{ request.title if request.title else 'No Title' }}
+                                        <i class="fas fa-external-link-alt ms-1 small text-muted"></i>
+                                    </a>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">
+                                        <i class="fas fa-tag me-1"></i>{{ request.category.title() if request.category else 'Unknown' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if request.priority == 'high' %}
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-fire me-1"></i>High
+                                        </span>
+                                    {% elif request.priority == 'medium' %}
+                                        <span class="badge bg-warning">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>Medium
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-info-circle me-1"></i>Low
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if request.status == 'open' %}
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-exclamation-circle me-1"></i>Open
+                                        </span>
+                                    {% elif request.status == 'in_progress' %}
+                                        <span class="badge bg-warning">
+                                            <i class="fas fa-spinner me-1"></i>In Progress
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check-circle me-1"></i>Completed
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="text-muted">
+                                        <div>{{ request.created_at.strftime('%b %d') if request.created_at else 'N/A' }}</div>
+                                        <small>{{ request.created_at.strftime('%Y') if request.created_at else 'N/A' }}</small>
+                                    </div>
+                                </td>
+                                {% if current_user and current_user.role == 'owner' %}
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        {% if request.status == 'open' %}
+                                        <form method="POST" action="{{ url_for('update_maintenance_request', request_id=request.id) if request.id else '#' }}" class="d-inline">
+                                            <input type="hidden" name="status" value="in_progress">
+                                            <button type="submit" class="btn btn-outline-warning" title="Mark as In Progress">
+                                                <i class="fas fa-play"></i>
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                        {% if request.status == 'in_progress' %}
+                                        <form method="POST" action="{{ url_for('update_maintenance_request', request_id=request.id) if request.id else '#' }}" class="d-inline">
+                                            <input type="hidden" name="status" value="completed">
+                                            <button type="submit" class="btn btn-outline-success" title="Mark as Completed">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                        {% if request.status == 'completed' %}
+                                        <form method="POST" action="{{ url_for('update_maintenance_request', request_id=request.id) if request.id else '#' }}" class="d-inline">
+                                            <input type="hidden" name="status" value="open">
+                                            <button type="submit" class="btn btn-outline-secondary" title="Reopen Request">
+                                                <i class="fas fa-redo"></i>
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                {% endif %}
+                            </tr>
+                            
+                            <!-- Detail Modal -->
+                            <div class="modal fade" id="detailModal{{ request.id if request.id else 'unknown' }}" tabindex="-1">
+                                <div class="modal-dialog modal-lg">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">
+                                                <i class="fas fa-tools text-primary me-2"></i>
+                                                {{ request.title if request.title else 'No Title' }}
+                                            </h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label class="form-label text-muted">Category</label>
+                                                        <div>
+                                                            <span class="badge bg-info">
+                                                                <i class="fas fa-tag me-1"></i>{{ request.category.title() if request.category else 'Unknown' }}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label text-muted">Priority</label>
+                                                        <div>
+                                                            {% if request.priority == 'high' %}
+                                                                <span class="badge bg-danger">
+                                                                    <i class="fas fa-fire me-1"></i>High
+                                                                </span>
+                                                            {% elif request.priority == 'medium' %}
+                                                                <span class="badge bg-warning">
+                                                                    <i class="fas fa-exclamation-triangle me-1"></i>Medium
+                                                                </span>
+                                                            {% else %}
+                                                                <span class="badge bg-success">
+                                                                    <i class="fas fa-info-circle me-1"></i>Low
+                                                                </span>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label class="form-label text-muted">Status</label>
+                                                        <div>
+                                                            {% if request.status == 'open' %}
+                                                                <span class="badge bg-danger">
+                                                                    <i class="fas fa-exclamation-circle me-1"></i>Open
+                                                                </span>
+                                                            {% elif request.status == 'in_progress' %}
+                                                                <span class="badge bg-warning">
+                                                                    <i class="fas fa-spinner me-1"></i>In Progress
+                                                                </span>
+                                                            {% else %}
+                                                                <span class="badge bg-success">
+                                                                    <i class="fas fa-check-circle me-1"></i>Completed
+                                                                </span>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label text-muted">Created</label>
+                                                        <div class="fw-semibold">{{ request.created_at.strftime('%B %d, %Y at %I:%M %p') if request.created_at else 'Unknown' }}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label class="form-label text-muted">Description</label>
+                                                <div class="p-3 bg-light rounded">{{ request.description if request.description else 'No description provided' }}</div>
+                                            </div>
+                                            
+                                            {% if request.resolved_at %}
+                                            <div class="mb-3">
+                                                <label class="form-label text-muted">Resolved</label>
+                                                <div class="fw-semibold text-success">{{ request.resolved_at.strftime('%B %d, %Y at %I:%M %p') if request.resolved_at else 'Unknown' }}</div>
+                                            </div>
+                                            {% endif %}
+                                            
+                                            {% if current_user and current_user.role == 'owner' %}
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label class="form-label text-muted">Tenant</label>
+                                                        <div class="fw-semibold">{{ request.tenant.username if request.tenant and request.tenant.username else 'Unknown' }}</div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label class="form-label text-muted">Apartment</label>
+                                                        <div class="fw-semibold">{{ request.tenant.apartment_number if request.tenant and request.tenant.apartment_number else 'N/A' }}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label class="form-label text-muted">Email</label>
+                                                        <div class="fw-semibold">{{ request.tenant.email if request.tenant and request.tenant.email else 'N/A' }}</div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label class="form-label text-muted">Phone</label>
+                                                        <div class="fw-semibold">{{ request.tenant.phone if request.tenant and request.tenant.phone else 'Not provided' }}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                                <i class="fas fa-times me-1"></i>Close
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-tools fs-1 text-muted"></i>
+                    </div>
+                    <h5 class="text-muted">No maintenance requests found</h5>
+                    <p class="text-muted">
+                        {% if current_user and current_user.role == 'tenant' %}
+                        Create your first maintenance request when you need repairs or assistance.
+                        {% else %}
+                        No maintenance requests have been submitted by tenants yet.
+                        {% endif %}
+                    </p>
+                    {% if current_user and current_user.role == 'tenant' %}
+                    <a href="{{ url_for('create_maintenance_request') }}" class="btn btn-warning mt-2">
+                        <i class="fas fa-plus me-2"></i>Create First Request
+                    </a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Filter functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const filterButtons = document.querySelectorAll('[data-filter]');
+    const tableRows = document.querySelectorAll('#maintenanceTable tbody tr');
+    
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            // Update active button
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Filter rows
+            const filter = this.dataset.filter;
+            tableRows.forEach(row => {
+                if (filter === 'all' || row.dataset.status === filter) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

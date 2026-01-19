@@ -1,0 +1,342 @@
+{% extends "base.html" %}
+
+{% block page_title %}Tenant Dashboard{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group" role="group">
+    <a href="{{ url_for('make_payment') }}" class="btn btn-primary">
+        <i class="fas fa-credit-card"></i> Make Payment
+    </a>
+    <a href="{{ url_for('create_maintenance_request') }}" class="btn btn-warning">
+        <i class="fas fa-tools"></i> Request Maintenance
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Welcome Banner -->
+<div class="row mb-4 fade-in">
+    <div class="col-12">
+        <div class="card bg-primary text-white border-0">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="user-avatar me-3" style="width: 60px; height: 60px; font-size: 1.5rem;">
+                                {{ current_user.username[0].upper() if current_user and current_user.username else '?' }}
+                            </div>
+                            <div>
+                                <h3 class="mb-1">Welcome back, {{ current_user.username if current_user and current_user.username else 'User' }}!</h3>
+                                <p class="mb-0 opacity-90">Apartment {{ current_user.apartment_number if current_user and current_user.apartment_number else 'N/A' }} | {{ current_user.email if current_user and current_user.email else 'N/A' }}</p>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-door-open me-2"></i>
+                                    <span>Unit: {{ current_user.apartment_number if current_user and current_user.apartment_number else 'N/A' }}</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-envelope me-2"></i>
+                                    <span>{{ current_user.email if current_user and current_user.email else 'Not provided' }}</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-phone me-2"></i>
+                                    <span>{{ current_user.phone if current_user and current_user.phone else 'Not provided' }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <div class="bg-white bg-opacity-10 rounded-3 p-3">
+                            <h6 class="mb-2">Current Month Status</h6>
+                            {% set has_current_payment = false %}
+                            {% if payments %}
+                                {% set current_month = moment().month if moment is defined else 1 %}
+                                {% set current_year = moment().year if moment is defined else 2024 %}
+                                {% for payment in payments %}
+                                    {% if payment.status == 'completed' %}
+                                        {% set has_current_payment = true %}
+                                    {% endif %}
+                                {% endfor %}
+                            {% endif %}
+                            {% if has_current_payment %}
+                                <div class="badge bg-success fs-6">
+                                    <i class="fas fa-check-circle me-1"></i>Paid
+                                </div>
+                            {% else %}
+                                <div class="badge bg-warning fs-6">
+                                    <i class="fas fa-clock me-1"></i>Pending
+                                </div>
+                            {% endif %}
+                            <div class="mt-2">
+                                <small>Due: End of month</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Stats -->
+<div class="row mb-4 fade-in">
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="stats-card success">
+            <div class="stats-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stats-number">{{ payments | selectattr('status', 'eq', 'completed') | list | length if payments else 0 }}</div>
+            <div class="stats-label">Payments Made</div>
+            <div class="mt-2">
+                <small class="opacity-75">This year</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="stats-card info">
+            <div class="stats-icon">
+                <i class="fas fa-dollar-sign"></i>
+            </div>
+            <div class="stats-number">${{ "%.0f"|format(payments | selectattr('status', 'eq', 'completed') | map(attribute='amount') | list | sum if payments else 0) }}</div>
+            <div class="stats-label">Total Paid</div>
+            <div class="mt-2">
+                <small class="opacity-75">All time</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="stats-card warning">
+            <div class="stats-icon">
+                <i class="fas fa-bell"></i>
+            </div>
+            <div class="stats-number">{{ notifications | length if notifications else 0 }}</div>
+            <div class="stats-label">New Notifications</div>
+            <div class="mt-2">
+                <small class="opacity-75">Unread messages</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Payment History -->
+    <div class="col-lg-8 mb-4">
+        <div class="card fade-in">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-history text-primary me-2"></i>
+                    Payment History
+                </h5>
+                <a href="{{ url_for('make_payment') }}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-plus me-1"></i>Make Payment
+                </a>
+            </div>
+            <div class="card-body">
+                {% if payments %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Period</th>
+                                <th>Amount</th>
+                                <th>Payment Date</th>
+                                <th>Method</th>
+                                <th>Status</th>
+                                <th>Receipt</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in payments %}
+                            <tr>
+                                <td>
+                                    <span class="badge bg-light text-dark">{{ payment.month if payment.month else 'N/A' }} {{ payment.year if payment.year else 'N/A' }}</span>
+                                </td>
+                                <td>
+                                    <span class="fw-semibold">${{ "%.2f"|format(payment.amount) if payment.amount else '0.00' }}</span>
+                                </td>
+                                <td>{{ payment.payment_date.strftime('%b %d, %Y') if payment.payment_date else 'N/A' }}</td>
+                                <td>
+                                    {% if payment.payment_method %}
+                                        <span class="text-muted">{{ payment.payment_method.title() }}</span>
+                                    {% else %}
+                                        <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if payment.status == 'completed' %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check-circle me-1"></i>Completed
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning">
+                                            <i class="fas fa-clock me-1"></i>{{ payment.status.title() if payment.status else 'Unknown' }}
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if payment.status == 'completed' %}
+                                        <button class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-download"></i>
+                                        </button>
+                                    {% else %}
+                                        <button class="btn btn-outline-secondary btn-sm" disabled>
+                                            <i class="fas fa-download"></i>
+                                        </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <div class="mb-3">
+                        <i class="fas fa-credit-card fs-1 text-muted"></i>
+                    </div>
+                    <h6 class="text-muted">No payment history</h6>
+                    <p class="text-muted small">You haven't made any payments yet. Start by paying your rent for current month.</p>
+                    <a href="{{ url_for('make_payment') }}" class="btn btn-primary mt-2">
+                        <i class="fas fa-plus me-2"></i>Make Your First Payment
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <!-- Recent Notifications -->
+        <div class="card mb-4 fade-in">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-bell text-warning me-2"></i>
+                    Notifications
+                </h5>
+                <a href="{{ url_for('notifications') }}" class="btn btn-outline-primary btn-sm">
+                    View All
+                </a>
+            </div>
+            <div class="card-body">
+                {% if notifications %}
+                <div class="notification-list">
+                    {% for notification in notifications[:3] %}
+                    <div class="notification-item mb-3 pb-3 border-bottom">
+                        <div class="d-flex">
+                            <div class="notification-icon me-3">
+                                {% if notification.priority == 'high' %}
+                                    <div class="bg-danger text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                        <i class="fas fa-exclamation"></i>
+                                    </div>
+                                {% elif notification.priority == 'medium' %}
+                                    <div class="bg-warning text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                        <i class="fas fa-info"></i>
+                                    </div>
+                                {% else %}
+                                    <div class="bg-info text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                        <i class="fas fa-bell"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1 fw-semibold">{{ notification.title if notification.title else 'No Title' }}</h6>
+                                <p class="small text-muted mb-1">{{ (notification.content[:50] + '...') if notification and notification.content and notification.content|length > 50 else (notification.content if notification and notification.content else 'No content') }}</p>
+                                <small class="text-muted">{{ notification.created_at.strftime('%b %d, %Y') if notification and notification.created_at else 'Unknown date' }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-3">
+                    <i class="fas fa-bell-slash fs-3 text-muted"></i>
+                    <p class="text-muted small mt-2">No new notifications</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="card mb-4 fade-in">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt text-primary me-2"></i>
+                    Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('make_payment') }}" class="btn btn-primary">
+                        <i class="fas fa-credit-card me-2"></i>Pay Rent
+                    </a>
+                    <a href="{{ url_for('create_maintenance_request') }}" class="btn btn-warning">
+                        <i class="fas fa-tools me-2"></i>Request Maintenance
+                    </a>
+                    <a href="{{ url_for('notifications') }}" class="btn btn-info">
+                        <i class="fas fa-bell me-2"></i>View Notifications
+                    </a>
+                    <a href="{{ url_for('documents') }}" class="btn btn-secondary">
+                        <i class="fas fa-file-alt me-2"></i>Documents
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Important Dates -->
+        <div class="card fade-in">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-calendar text-info me-2"></i>
+                    Important Dates
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="date-list">
+                    <div class="date-item mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-semibold">Rent Due</div>
+                                <small class="text-muted">Monthly payment</small>
+                            </div>
+                            <div class="text-end">
+                                <div class="badge bg-warning">1st</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="date-item mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-semibold">Late Fee</div>
+                                <small class="text-muted">After 5th of month</small>
+                            </div>
+                            <div class="text-end">
+                                <div class="badge bg-danger">6th</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="date-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-semibold">Maintenance Window</div>
+                                <small class="text-muted">Regular schedule</small>
+                            </div>
+                            <div class="text-end">
+                                <div class="badge bg-info">9 AM - 5 PM</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

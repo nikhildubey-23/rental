@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}Login - RentalHub{% endblock %}
+
+{% block content %}
+<div class="auth-card fade-in">
+    <div class="auth-header">
+        <div class="auth-logo">
+            <i class="fas fa-building"></i>
+        </div>
+        <h2 class="auth-title">Welcome Back</h2>
+        <p class="auth-subtitle">Sign in to your RentalHub account</p>
+    </div>
+    
+    <div class="auth-body">
+        {% if form %}
+        <form method="POST">
+            {{ form.hidden_tag() }}
+            
+            <div class="mb-3">
+                {{ form.username.label(class="form-label") }}
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="fas fa-user"></i>
+                    </span>
+                    {{ form.username(class="form-control", placeholder="Enter your username") }}
+                </div>
+                {% if form.username.errors %}
+                    <div class="text-danger small mt-1">
+                        {% for error in form.username.errors %}
+                            <i class="fas fa-exclamation-circle me-1"></i>{{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="mb-4">
+                {{ form.password.label(class="form-label") }}
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="fas fa-lock"></i>
+                    </span>
+                    {{ form.password(class="form-control", placeholder="Enter your password") }}
+                    <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+                {% if form.password.errors %}
+                    <div class="text-danger small mt-1">
+                        {% for error in form.password.errors %}
+                            <i class="fas fa-exclamation-circle me-1"></i>{{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="d-grid mb-4">
+                {{ form.submit(class="btn btn-primary btn-lg") }}
+            </div>
+        </form>
+        {% endif %}
+        
+        <div class="text-center">
+            <p class="mb-0">Don't have an account? 
+                <a href="{{ url_for('register') }}" class="text-primary text-decoration-none fw-semibold">
+                    Register here
+                </a>
+            </p>
+        </div>
+        
+        <div class="mt-4 p-3 bg-light rounded-3">
+            <h6 class="text-center mb-3 fw-semibold">
+                <i class="fas fa-info-circle text-primary me-2"></i>
+                Demo Accounts
+            </h6>
+            <div class="row text-center">
+                <div class="col-6">
+                    <div class="mb-2">
+                        <div class="badge bg-primary mb-1">Owner</div>
+                        <div class="small">
+                            <strong>Username:</strong> admin<br>
+                            <strong>Password:</strong> admin123
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="mb-2">
+                        <div class="badge bg-success mb-1">Tenant</div>
+                        <div class="small">
+                            <strong>Register</strong><br>
+                            <strong>New Account</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Toggle password visibility
+    document.getElementById('togglePassword')?.addEventListener('click', function() {
+        const passwordInput = document.getElementById('password');
+        const icon = this.querySelector('i');
+        
+        if (passwordInput && passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else if (passwordInput) {
+            passwordInput.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    });
+    
+    // Auto-fill demo credentials
+    document.addEventListener('DOMContentLoaded', function() {
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        
+        // Demo buttons
+        document.querySelectorAll('.demo-fill').forEach(button => {
+            button.addEventListener('click', function() {
+                const username = this.dataset.username;
+                const password = this.dataset.password;
+                
+                if (usernameInput) usernameInput.value = username;
+                if (passwordInput) passwordInput.value = password;
+            });
+        });
+        
+        // Quick demo fill on clicking demo badges
+        document.querySelector('.badge.bg-primary')?.parentElement.addEventListener('click', function() {
+            if (usernameInput) usernameInput.value = 'admin';
+            if (passwordInput) passwordInput.value = 'admin123';
+        });
+    });
+</script>
+{% endblock %}
