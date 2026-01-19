@@ -107,10 +107,10 @@ class Property(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    units = db.relationship('Unit', backref='property', lazy=True, cascade='all, delete-orphan')
-    payments = db.relationship('Payment', backref='property', lazy=True)
-    maintenance_requests = db.relationship('MaintenanceRequest', backref='property', lazy=True)
-    notifications = db.relationship('Notification', backref='property', lazy=True)
+    units = db.relationship('Unit', backref='property_obj', lazy=True, cascade='all, delete-orphan')
+    payments = db.relationship('Payment', backref='property_obj', lazy=True)
+    maintenance_requests = db.relationship('MaintenanceRequest', backref='property_obj', lazy=True)
+    notifications = db.relationship('Notification', backref='property_obj', lazy=True)
 
 class Unit(db.Model):
     """Individual rental units within a property"""
@@ -124,9 +124,9 @@ class Unit(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    current_tenant = db.relationship('User', backref='unit', uselist=False)
-    payments = db.relationship('Payment', backref='unit', lazy=True)
-    maintenance_requests = db.relationship('MaintenanceRequest', backref='unit', lazy=True)
+    current_tenant = db.relationship('User', backref='current_unit', uselist=False)
+    payments = db.relationship('Payment', backref='payment_unit', lazy=True)
+    maintenance_requests = db.relationship('MaintenanceRequest', backref='maintenance_unit', lazy=True)
 
 class User(UserMixin, db.Model):
     """Enhanced user model for multi-tenant system"""
@@ -144,8 +144,8 @@ class User(UserMixin, db.Model):
     unit_id = db.Column(db.Integer, db.ForeignKey('unit.id'), nullable=True)  # For current tenants
     
     # Relationships
-    payments = db.relationship('Payment', backref='tenant', lazy=True)
-    maintenance_requests = db.relationship('MaintenanceRequest', backref='tenant', lazy=True)
+    payments = db.relationship('Payment', backref='payment_tenant', lazy=True)
+    maintenance_requests = db.relationship('MaintenanceRequest', backref='maintenance_tenant', lazy=True)
 
 class Payment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -161,9 +161,8 @@ class Payment(db.Model):
     transaction_id = db.Column(db.String(100))
     
     # Relationships
-    tenant = db.relationship('User', backref='payments', uselist=False)
-    unit = db.relationship('Unit', backref='payments', uselist=False)
-    property = db.relationship('Property', backref='payments', uselist=False)
+    tenant = db.relationship('User', backref='user_payments', uselist=False)
+    unit = db.relationship('Unit', backref='payment_unit_info', uselist=False)
 
 class Notification(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -177,8 +176,8 @@ class Notification(db.Model):
     file_attachment = db.Column(db.String(200))
     
     # Relationships
-    tenant = db.relationship('Tenant', backref='notifications', uselist=False)
-    property = db.relationship('Property', backref='notifications', uselist=False)
+    tenant = db.relationship('Tenant', backref='tenant_notifications', uselist=False)
+    # property relationship removed due to naming conflict
 
 class MaintenanceRequest(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -194,9 +193,9 @@ class MaintenanceRequest(db.Model):
     resolved_at = db.Column(db.DateTime)
     
     # Relationships
-    tenant = db.relationship('User', backref='maintenance_requests', uselist=False)
-    unit = db.relationship('Unit', backref='maintenance_requests', uselist=False)
-    property = db.relationship('Property', backref='maintenance_requests', uselist=False)
+    tenant = db.relationship('User', backref='user_maintenance_requests', uselist=False)
+    unit = db.relationship('Unit', backref='unit_maintenance_requests', uselist=False)
+    # property relationship removed due to naming conflict
 
 class Document(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -211,9 +210,9 @@ class Document(db.Model):
     target_role = db.Column(db.String(20))  # 'owner', 'tenant', or None for all
     
     # Relationships
-    tenant = db.relationship('Tenant', backref='documents', uselist=False)
-    property = db.relationship('Property', backref='documents', uselist=False)
-    uploader = db.relationship('User', backref='documents', uselist=False)
+    tenant = db.relationship('Tenant', backref='tenant_documents', uselist=False)
+    # property relationship removed due to naming conflict
+    uploader = db.relationship('User', backref='uploaded_documents', uselist=False)
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -302,7 +301,9 @@ class UnitForm(FlaskForm):
 @app.route('/')
 def index():
     if current_user.is_authenticated:
-        if current_user.role == 'owner':
+        if current_user.role == 'admin':
+            return redirect(url_for('owner_dashboard'))
+        elif current_user.role == 'owner':
             return redirect(url_for('owner_dashboard'))
         else:
             return redirect(url_for('tenant_dashboard'))
@@ -393,7 +394,7 @@ def logout():
 @app.route('/owner/dashboard')
 @login_required
 def owner_dashboard():
-    if current_user.role != 'owner':
+    if current_user.role not in ['admin', 'owner']:
         flash('Access denied.', 'danger')
         return redirect(url_for('index'))
     
