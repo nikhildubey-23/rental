@@ -136,6 +136,7 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(128), nullable=False)
     role = db.Column(db.String(20), default='tenant')  # 'owner', 'tenant', 'admin'
     phone = db.Column(db.String(20))
+    apartment_number = db.Column(db.String(20))  # Added apartment number field
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -769,9 +770,13 @@ def download_document(document_id):
 def register_tenant():
     """Register a new tenant (business owner)"""
     try:
+        app.logger.info('Tenant registration route accessed')
         form = TenantRegistrationForm()
+        app.logger.info(f'Form created, method: {request.method}')
+        
         if form.validate_on_submit():
             try:
+                app.logger.info(f'Form validation passed. Data: {form.data}')
                 # Check if business email already exists
                 if Tenant.query.filter_by(contact_email=form.contact_email.data).first():
                     flash('Business email already registered. Please use a different one.', 'danger')
@@ -793,15 +798,18 @@ def register_tenant():
                 
             except Exception as e:
                 db.session.rollback()
-                app.logger.error(f'Error during tenant registration: {str(e)}')
-                flash('Registration failed. Please try again.', 'danger')
+                app.logger.error(f'Error during tenant registration: {str(e)}\n{traceback.format_exc()}')
+                flash(f'Registration failed: {str(e)}', 'danger')
+        else:
+            if request.method == 'POST':
+                app.logger.warning(f'Form validation failed: {form.errors}')
                 
         return render_template('register_tenant.html', form=form)
         
     except Exception as e:
-        app.logger.error(f'Unexpected error in tenant registration: {str(e)}')
-        flash('An unexpected error occurred. Please try again.', 'danger')
-        return render_template('register_tenant.html', form=None)
+        app.logger.error(f'Unexpected error in tenant registration: {str(e)}\n{traceback.format_exc()}')
+        flash(f'An unexpected error occurred: {str(e)}', 'danger')
+        return render_template('register_tenant.html', form=form)
 
 @app.route('/dashboard/tenant/<int:tenant_id>')
 @login_required
